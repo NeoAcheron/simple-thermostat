@@ -28,6 +28,7 @@ The aim is to provide a card with simpler interactions that are easier to use an
   * `temperature`: *bool*
   * `state`: *bool*
   * `mode`: *bool*
+  * `fan_speed`: *bool*
 * `sensors` *array*
   * `entity` *string*: A sensor value entity id **required**
   * `name` *string*: Specify a sensor name to use instead of the default friendly_name

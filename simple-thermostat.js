@@ -146,6 +146,7 @@ const DEFAULT_HIDE = {
   temperature: false,
   state: false,
   mode: false,
+  fan_speed: false,
 }
 
 class SimpleThermostat extends LitElement {
@@ -178,6 +179,7 @@ class SimpleThermostat extends LitElement {
     this._temperature = null
     this._mode = null
     this._hide = DEFAULT_HIDE
+    this._fan_speed = null
   }
 
   set hass (hass) {
@@ -192,10 +194,13 @@ class SimpleThermostat extends LitElement {
           operation_mode: mode,
           operation_list: modes = [],
           temperature: _temperature,
+          fan_mode: fan_speed,
+          fan_list: fan_speeds = []
         }
       } = entity
       this._temperature = _temperature
       this._mode = mode
+      this._fan_speed = fan_speed
     }
 
     if (this.config.icon) {
@@ -253,6 +258,8 @@ class SimpleThermostat extends LitElement {
         current_temperature: current,
         operation_list: operations = [],
         operation_mode: operation,
+        fan_list: fan_speeds = [],
+        fan_mode: fan_speed
       },
     } = entity
     const unit = this._hass.config.unit_system.temperature
@@ -263,6 +270,7 @@ class SimpleThermostat extends LitElement {
       ),
       _hide.state ? null : this.renderInfoItem(this.localize(state, 'state.climate.'), 'State'),
       _hide.mode ? null : this.renderModeSelector(operations, operation),
+      _hide.fan_speed ? null : this.renderFanSpeedSelector(fan_speeds, fan_speed),
       sensors.map(({ name, state }) => {
         return this.renderInfoItem(state, name)
       }) || null,
@@ -357,6 +365,38 @@ class SimpleThermostat extends LitElement {
     `
   }
 
+  renderFanSpeedSelector (speeds, speed) {
+    const selected = speeds.indexOf(speed)
+    return html`
+      <tr>
+        <th>Fan Speed:</th>
+        <td style="max-width: 4em;">
+          <paper-dropdown-menu
+            class="fan-speed-selector"
+            no-label-float
+            noink
+            no-animations
+            vertical-offset="26"
+            @selected-item-changed="${this.setFanSpeed}"
+          >
+            <paper-listbox
+              items="${speeds}"
+              slot="dropdown-content"
+              class="dropdown-content"
+              selected="${selected}"
+            >
+              ${ speeds.map(m =>
+                html`<paper-item fan-speed-value="${m}">
+                  ${this.localize(m, 'state.climate.')}
+                  </paper-item>`
+              ) }
+            </paper-listbox>
+          </paper-dropdown-menu>
+        </td>
+      </tr>
+    `
+  }
+
   renderInfoItem (state, heading) {
     if (!state) return
 
@@ -412,6 +452,18 @@ class SimpleThermostat extends LitElement {
       this._hass.callService("climate", "set_operation_mode", {
         entity_id: this.config.entity,
         operation_mode: value,
+      });
+    }
+  }
+
+  setFanSpeed (e) {
+    const { detail: { value: node } } = e
+    if (!node) return
+    const value = node.getAttribute('fan-speed-value')
+    if (value && value !== this._fan_speed) {
+      this._hass.callService("climate", "set_fan_mode", {
+        entity_id: this.config.entity,
+        fan_mode: value,
       });
     }
   }
